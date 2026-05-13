@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Rey & Lenferna Tariff Zone Finder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    /* Essential Leaflet CSS embedded so the map does not break if the CDN stylesheet is blocked. */
+    .leaflet-pane,
+    .leaflet-tile,
+    .leaflet-marker-icon,
+    .leaflet-marker-shadow,
+    .leaflet-tile-container,
+    .leaflet-pane > svg,
+    .leaflet-pane > canvas,
+    .leaflet-zoom-box,
+    .leaflet-image-layer,
+    .leaflet-layer {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+    .leaflet-container {
+      overflow: hidden;
+      touch-action: pan-x pan-y;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #dfeff4;
+      outline: 0;
+    }
+    .leaflet-tile,
+    .leaflet-marker-icon,
+    .leaflet-marker-shadow {
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    .leaflet-tile {
+      filter: inherit;
+      visibility: hidden;
+    }
+    .leaflet-tile-loaded {
+      visibility: inherit;
+    }
+    .leaflet-zoom-box {
+      width: 0;
+      height: 0;
+      box-sizing: border-box;
+      z-index: 800;
+    }
+    .leaflet-pane { z-index: 400; }
+    .leaflet-tile-pane { z-index: 200; }
+    .leaflet-overlay-pane { z-index: 400; }
+    .leaflet-shadow-pane { z-index: 500; }
+    .leaflet-marker-pane { z-index: 600; }
+    .leaflet-tooltip-pane { z-index: 650; }
+    .leaflet-popup-pane { z-index: 700; }
+    .leaflet-map-pane canvas { z-index: 100; }
+    .leaflet-map-pane svg { z-index: 200; }
+    .leaflet-vml-shape {
+      width: 1px;
+      height: 1px;
+    }
+    .lvml {
+      behavior: url(#default#VML);
+      display: inline-block;
+      position: absolute;
+    }
+    .leaflet-control {
+      position: relative;
+      z-index: 800;
+      pointer-events: visiblePainted;
+      pointer-events: auto;
+    }
+    .leaflet-top,
+    .leaflet-bottom {
+      position: absolute;
+      z-index: 1000;
+      pointer-events: none;
+    }
+    .leaflet-top { top: 0; }
+    .leaflet-right { right: 0; }
+    .leaflet-bottom { bottom: 0; }
+    .leaflet-left { left: 0; }
+    .leaflet-control { float: left; clear: both; }
+    .leaflet-right .leaflet-control { float: right; }
+    .leaflet-top .leaflet-control { margin-top: 10px; }
+    .leaflet-bottom .leaflet-control { margin-bottom: 10px; }
+    .leaflet-left .leaflet-control { margin-left: 10px; }
+    .leaflet-right .leaflet-control { margin-right: 10px; }
+    .leaflet-control-zoom a {
+      background-color: #fff;
+      border-bottom: 1px solid #ccc;
+      width: 26px;
+      height: 26px;
+      line-height: 26px;
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      color: black;
+    }
+    .leaflet-control-zoom-in,
+    .leaflet-control-zoom-out {
+      font: bold 18px 'Lucida Console', Monaco, monospace;
+      text-indent: 1px;
+    }
+    .leaflet-control-attribution {
+      background: rgba(255,255,255,0.8);
+      margin: 0;
+      font-size: 11px;
+      padding: 0 5px;
+      color: #333;
+    }
+    .leaflet-control-attribution a { text-decoration: none; }
+    .leaflet-popup {
+      position: absolute;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .leaflet-popup-content-wrapper {
+      padding: 1px;
+      text-align: left;
+      border-radius: 12px;
+      background: white;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+    }
+    .leaflet-popup-content {
+      margin: 13px 19px;
+      line-height: 1.4;
+      font-size: 13px;
+      min-height: 1px;
+    }
+    .leaflet-popup-tip-container {
+      width: 40px;
+      height: 20px;
+      position: absolute;
+      left: 50%;
+      margin-top: -1px;
+      margin-left: -20px;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .leaflet-popup-tip {
+      width: 17px;
+      height: 17px;
+      padding: 1px;
+      margin: -10px auto 0;
+      transform: rotate(45deg);
+      background: white;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+    }
+    .leaflet-popup-close-button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      padding: 4px 4px 0 0;
+      border: none;
+      text-align: center;
+      width: 18px;
+      height: 14px;
+      font: 16px/14px Tahoma, Verdana, sans-serif;
+      color: #757575;
+      text-decoration: none;
+      background: transparent;
+    }
+    .leaflet-tooltip {
+      position: absolute;
+      padding: 6px;
+      background-color: #fff;
+      border: 1px solid #fff;
+      border-radius: 3px;
+      color: #222;
+      white-space: nowrap;
+      user-select: none;
+      pointer-events: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #map {
+      height: 100vh;
+      width: 100vw;
+      position: relative;
+    }
+    .control-panel {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 1100;
+      background: #ffffff;
+      border: 1px solid #cfd8dc;
+      border-radius: 10px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+      padding: 14px;
+      width: 360px;
+      max-width: calc(100vw - 44px);
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .control-panel h2 {
+      margin: 0 0 8px 0;
+      font-size: 17px;
+      line-height: 1.25;
+    }
+    .control-panel p {
+      margin: 4px 0 10px 0;
+      font-size: 12px;
+      line-height: 1.35;
+      color: #52616b;
+    }
+    .search-row {
+      display: flex;
+      gap: 6px;
+    }
+    #placeInput {
+      flex: 1;
+      padding: 9px 10px;
+      border: 1px solid #b0bec5;
+      border-radius: 7px;
+      font-size: 14px;
+      min-width: 0;
+    }
+    #searchBtn, #clearBtn {
+      border: 0;
+      border-radius: 7px;
+      padding: 9px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    #searchBtn {
+      background: #174ea6;
+      color: white;
+    }
+    #clearBtn {
+      background: #e8eef7;
+      color: #174ea6;
+      margin-top: 8px;
+      width: 100%;
+    }
+    #status {
+      margin-top: 10px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .result-card {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      background: #f7f9fb;
+      border: 1px solid #d9e2ec;
+    }
+    .zone-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: white;
+      font-weight: 700;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+    .suggestions {
+      margin-top: 8px;
+      font-size: 12px;
+      max-height: 145px;
+      overflow: auto;
+    }
+    .suggestion {
+      padding: 7px;
+      border: 1px solid #e0e6eb;
+      border-radius: 6px;
+      margin-bottom: 5px;
+      cursor: pointer;
+      background: #ffffff;
+    }
+    .suggestion:hover {
+      background: #eef6ff;
+    }
+    .legend {
+      position: absolute;
+      bottom: 24px;
+      left: 14px;
+      z-index: 1100;
+      background: #ffffff;
+      padding: 11px 13px;
+      border: 1px solid #cfd8dc;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.45;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .key {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      margin-right: 7px;
+      vertical-align: middle;
+      border-radius: 2px;
+    }
+    .small-note {
+      margin-top: 8px;
+      max-width: 310px;
+      color: #52616b;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    @media (max-width: 640px) {
+      .control-panel {
+        width: auto;
+        left: 10px;
+        right: 10px;
+      }
+      .legend {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <div class="control-panel">
+    <h2>Rey & Lenferna Tariff Zone Finder</h2>
+    <p>Search a place in Mauritius. The map calculates the driving distance from Rey & Lenferna and classifies the location by tariff zone.</p>
+    <div class="search-row">
+      <input id="placeInput" type="text" placeholder="Example: Moka, Rose Belle, Curepipe" />
+      <button id="searchBtn">Search</button>
+    </div>
+    <button id="clearBtn">Clear route and result</button>
+    <div id="status">Ready.</div>
+    <div id="suggestions" class="suggestions"></div>
+  </div>
+
+  <div class="legend">
+    <strong>Tariff zones</strong><br>
+    <span class="key" style="background:#2e8b57;"></span>Zone 1: below 14 km — Rs 1,200<br>
+    <span class="key" style="background:#f1c40f;"></span>Zone 2: 14-24 km — Rs 1,600<br>
+    <span class="key" style="background:#e67e22;"></span>Zone 3: 24-34 km — Rs 2,000<br>
+    <span class="key" style="background:#8e44ad;"></span>Zone 4: above 34 km — Rs 2,500<br>
+    <div class="small-note">The tariff boundaries are draft visual bands. The searched result uses road-routing distance.</div>
+  </div>
+
+  <script>
+    const pivot = [-20.1703472, 57.4847256];
+    const ring14 = [[-20.08491176544617, 57.48472559999999], [-20.082772965265534, 57.4928833442875], [-20.08133781644524, 57.50143610686404], [-20.08065447618459, 57.51031368160129], [-20.080764819882624, 57.51943997044978], [-20.07966593873144, 57.52974471733078], [-20.079604226935203, 57.54050122659912], [-20.080643777814615, 57.5515925767063], [-20.082837196188805, 57.56289355047949], [-20.090678479918804, 57.569534613351365], [-20.09893214114131, 57.575324539946585], [-20.107519271303982, 57.5802379504489], [-20.116360011058593, 57.58425754354675], [-20.12661110447771, 57.5845536640133], [-20.136485094638285, 57.58373696563726], [-20.14588061523762, 57.58188073444291], [-20.154705529699783, 57.57906838462932], [-20.162700324295148, 57.57753956324848], [-20.17032404690861, 57.575263937102285], [-20.17751698787566, 57.57229876247866], [-20.18422599210328, 57.56870656999097], [-20.191566511608308, 57.569182769989915], [-20.19908643394894, 57.56891904093435], [-20.206719286683658, 57.56788600674484], [-20.214395204581773, 57.56606111536952], [-20.222428158640522, 57.56401804610923], [-20.230450208777828, 57.56108378756611], [-20.23837529729641, 57.55724583527831], [-20.24611534670739, 57.55250101962237], [-20.25284465364091, 57.54630566581219], [-20.259125867842315, 57.53936717697072], [-20.264888037523626, 57.53172266273358], [-20.27006296342334, 57.52341683743476], [-20.271545680695308, 57.51363274668346], [-20.27219679541048, 57.503870493702586], [-20.272031388949188, 57.49420926699137], [-20.271071080737144, 57.48472559999999], [-20.2688957607827, 57.47553456636851], [-20.265997314183167, 57.466746764963126], [-20.262424981718542, 57.4584253621244], [-20.258232723054185, 57.450627444031426], [-20.25429356617326, 57.442998293629174], [-20.249781541238697, 57.43583870640988], [-20.244743176107914, 57.42919646954572], [-20.239228408046554, 57.42311431042083], [-20.23074746001673, 57.420341632097674], [-20.22236134092947, 57.418649833921165], [-20.21418008079318, 57.417997869382276], [-20.20630755982105, 57.41833270977607], [-20.197701136498605, 57.42219606916335], [-20.190023302109797, 57.42709921799615], [-20.18337424118153, 57.432897075910304], [-20.17783734209971, 57.43943434986216], [-20.1739472781453, 57.4408207158443], [-20.170342180611517, 57.4425701805157], [-20.16705066238254, 57.44464030440953], [-20.164096563697324, 57.446986216622115], [-20.160101023451425, 57.44400926459988], [-20.155577814385087, 57.44151535840008], [-20.150577845247536, 57.439579027598185], [-20.145160135296425, 57.438268797478244], [-20.139133184034588, 57.43725400896456], [-20.132766098157855, 57.437031625905405], [-20.126144815386226, 57.43765523268889], [-20.119361307451214, 57.43916828262218], [-20.113986185774035, 57.44270166401328], [-20.10881525212809, 57.44689643816846], [-20.103916653281047, 57.451740190192815], [-20.099357947809324, 57.45721282948381], [-20.094988185784597, 57.46322468535936], [-20.091080213712054, 57.46984317726952], [-20.08770042576779, 57.47702661679718], [-20.08491176544617, 57.48472559999999]];
+    const ring24 = [[-20.023886455050572, 57.48472559999999], [-20.020219711248185, 57.498704722437616], [-20.017758723639922, 57.513360562242376], [-20.016585990029284, 57.52857295195882], [-20.016773255354167, 57.54421165277345], [-20.01488662986623, 57.5618693355945], [-20.01477710460581, 57.5803014174112], [-20.0165545067306, 57.59930783595843], [-20.020309005728617, 57.6186743439154], [-20.033747469343094, 57.63005965355582], [-20.047893092498143, 57.639987456549164], [-20.062610722251108, 57.648414091883694], [-20.07776355829255, 57.65530970946975], [-20.095336640853123, 57.65582521077697], [-20.112264025694042, 57.65443307948888], [-20.128371875203186, 57.65125860600867], [-20.143502147565847, 57.64644449773414], [-20.15720848726892, 57.64382966739703], [-20.17027915829602, 57.63993414811088], [-20.18261173175254, 57.6348559404647], [-20.194115006172805, 57.628702123613785], [-20.206698467681402, 57.62952339446865], [-20.219589908335568, 57.629076227460324], [-20.232675388794906, 57.62731007934703], [-20.245835136852538, 57.6241860952938], [-20.25960704432108, 57.620688009798656], [-20.273360706087278, 57.61566148818598], [-20.286948547104686, 57.60908486897473], [-20.30021950713935, 57.600952507530145], [-20.31175823939915, 57.59033148322676], [-20.32252883205172, 57.57843513783391], [-20.332409533728434, 57.5653270508998], [-20.34128330659374, 57.55108388638006], [-20.343827405759946, 57.534303799592934], [-20.344945232603994, 57.51756080979308], [-20.344662639912894, 57.50099092707128], [-20.34301670983511, 57.48472559999999], [-20.339287296377584, 57.46896239370596], [-20.33431770127334, 57.45389116976016], [-20.328192423000388, 57.43962037212538], [-20.32100405859116, 57.42624798118553], [-20.31424921024445, 57.413165451876566], [-20.306512059370707, 57.40088888178463], [-20.297872456767088, 57.38950024575758], [-20.288416099254118, 57.37907280988524], [-20.27387612479358, 57.374322459381354], [-20.25949916112874, 57.37142580608249], [-20.245473849553584, 57.37031219373028], [-20.231978259514246, 57.37089044227281], [-20.217226122080934, 57.3775186752733], [-20.204066164721656, 57.38592860907084], [-20.192669974387897, 57.39587139984057], [-20.18318034647426, 57.40708079428428], [-20.17651209447974, 57.40945884471243], [-20.170332449145658, 57.41245916960423], [-20.16469043615706, 57.416008988784334], [-20.15962689900989, 57.42003136646276], [-20.152776594990605, 57.41492944244302], [-20.14502180014702, 57.41065590771905], [-20.13644983485096, 57.40733847684541], [-20.127161919285516, 57.40509454246334], [-20.116829675800773, 57.403357344802885], [-20.10591460073562, 57.402978546283215], [-20.09456403670413, 57.40404983876552], [-20.082935651976303, 57.406645528357785], [-20.07372222692655, 57.41270310587954], [-20.064858925868762, 57.41989382243353], [-20.056462511575766, 57.42819632470703], [-20.04864872994725, 57.43757612528458], [-20.041158725345664, 57.447879557885805], [-20.034460174647137, 57.45922209701452], [-20.028666811401553, 57.47153231612886], [-20.023886455050572, 57.48472559999999]];
+    const ring34 = [[-19.96286114465498, 57.48472559999999], [-19.957666267129134, 57.50452147087846], [-19.954178833278092, 57.525275379948674], [-19.95251563393536, 57.54681735194622], [-19.952778249107496, 57.56896318477079], [-19.950101533355948, 57.59396750303268], [-19.949941098574094, 57.62006881270712], [-19.952452466132605, 57.64698422001506], [-19.957763360847494, 57.674410786640806], [-19.976795896109728, 57.69054084334609], [-19.996830557975905, 57.70460833745557], [-20.017676047997025, 57.71655120216871], [-20.039138709562458, 57.72632688234921], [-20.064033582215743, 57.72706828442667], [-20.088014799412118, 57.725107296139065], [-20.110835997772433, 57.720620926647285], [-20.132273153410186, 57.71381093546964], [-20.151691841422966, 57.710115096351885], [-20.170210644184287, 57.70460431210055], [-20.187684356123494, 57.69741719914027], [-20.20398366430604, 57.68870528724739], [-20.221809820967053, 57.689875743020615], [-20.240072892772943, 57.6892492659742], [-20.258611485200248, 57.68675399193414], [-20.277255916899197, 57.68233460087112], [-20.29676771303348, 57.67738511975058], [-20.316254295998025, 57.6702693881389], [-20.335506534166115, 57.66095639813441], [-20.354310326239304, 57.64943785224632], [-20.370660803903803, 57.63439082236958], [-20.38592311319113, 57.61753513247594], [-20.399924602737094, 57.598960799779306], [-20.412499291307157, 57.57877644587172], [-20.41610669759451, 57.554994199435825], [-20.417692602446436, 57.53126402291103], [-20.41729362896983, 57.507778965489145], [-20.414962338933073, 57.48472559999999], [-20.409678586057403, 57.462384232157504], [-20.402637147661313, 57.441024207830246], [-20.39395785198824, 57.42079938199471], [-20.38377201309369, 57.40184872841414], [-20.37419979309445, 57.38330948886447], [-20.36323563364066, 57.3659134388193], [-20.350992783029373, 57.349776785494136], [-20.337592773227534, 57.335003348988366], [-20.316992768744274, 57.32827769131399], [-20.29662433122223, 57.32417918024341], [-20.276754728037005, 57.32260730587768], [-20.257636208156942, 57.32343250779734], [-20.23673980725806, 57.33283006944409], [-20.218099437125215, 57.344750575093904], [-20.201957955305794, 57.35884130673883], [-20.18851743418715, 57.37472502174082], [-20.17907135302332, 57.378095942920325], [-20.170317595859714, 57.38234816343885], [-20.162325580342543, 57.38737854023721], [-20.15515313198385, 57.39307806093233], [-20.145447393404037, 57.38585234958797], [-20.13446041263261, 57.37980062911698], [-20.122315961796684, 57.37510375673628], [-20.109157498810383, 57.371927926155315], [-20.09451969305654, 57.369470346783], [-20.07905657223366, 57.36893715005157], [-20.0629769009018, 57.37045799633286], [-20.04650404561624, 57.374137890727894], [-20.03345320725776, 57.38271995204493], [-20.020898500851867, 57.392906336272105], [-20.00900525510177, 57.40466669359055], [-19.997937346132673, 57.41795210180973], [-19.987327942695917, 57.43254494495212], [-19.977839502352815, 57.448608668677785], [-19.96963302762851, 57.46604214116772], [-19.96286114465498, 57.48472559999999]];
+    const island = [[-20.02, 57.305], [-19.995, 57.355], [-19.982, 57.425], [-19.992, 57.5], [-20.01, 57.585], [-20.045, 57.675], [-20.105, 57.76], [-20.185, 57.815], [-20.275, 57.835], [-20.37, 57.815], [-20.465, 57.765], [-20.535, 57.69], [-20.575, 57.6], [-20.585, 57.5], [-20.565, 57.395], [-20.515, 57.3], [-20.44, 57.225], [-20.35, 57.185], [-20.255, 57.175], [-20.165, 57.205], [-20.085, 57.25], [-20.04, 57.285], [-20.02, 57.305]];
+
+    const colours = {
+      zone1: "#2e8b57",
+      zone2: "#f1c40f",
+      zone3: "#e67e22",
+      zone4: "#8e44ad"
+    };
+
+    const map = L.map("map", {
+      preferCanvas: true,
+      zoomSnap: 0.25,
+      zoomDelta: 0.5
+    }).setView(pivot, 10.2);
+
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const reversed14 = [...ring14].reverse();
+    const reversed24 = [...ring24].reverse();
+    const reversed34 = [...ring34].reverse();
+
+    const zone4 = L.polygon([island, reversed34], {
+      color: colours.zone4,
+      weight: 3,
+      fillColor: colours.zone4,
+      fillOpacity: 0.14,
+      interactive: true
+    }).addTo(map).bindTooltip("Zone 4: above 34 km");
+
+    const zone3 = L.polygon([ring34, reversed24], {
+      color: colours.zone3,
+      weight: 3,
+      fillColor: colours.zone3,
+      fillOpacity: 0.25,
+      interactive: true
+    }).addTo(map).bindTooltip("Zone 3: 24-34 km");
+
+    const zone2 = L.polygon([ring24, reversed14], {
+      color: colours.zone2,
+      weight: 3,
+      fillColor: colours.zone2,
+      fillOpacity: 0.32,
+      interactive: true
+    }).addTo(map).bindTooltip("Zone 2: 14-24 km");
+
+    const zone1 = L.polygon(ring14, {
+      color: colours.zone1,
+      weight: 4,
+      fillColor: colours.zone1,
+      fillOpacity: 0.36,
+      interactive: true
+    }).addTo(map).bindTooltip("Zone 1: below 14 km");
+
+    const boundary34 = L.polyline(ring34, {
+      color: colours.zone4,
+      weight: 4,
+      dashArray: "8,6"
+    }).addTo(map).bindTooltip("34 km boundary");
+
+    L.marker(pivot).addTo(map)
+      .bindPopup("<strong>Rey & Lenferna Ltd</strong><br>Corrected pivot from supplied Google Maps link.");
+
+    setTimeout(() => {
+      map.invalidateSize();
+      const zoneBounds = L.latLngBounds(island);
+      map.fitBounds(zoneBounds, { padding: [40, 40] });
+    }, 300);
+
+    let routeLayer = null;
+    let destinationMarker = null;
+
+    function getZone(distanceKm) {
+      if (distanceKm < 14) {
+        return { name: "Zone 1", range: "below 14 km", rate: "Rs 1,200", rateValue: 1200, colour: colours.zone1 };
+      }
+      if (distanceKm <= 24) {
+        return { name: "Zone 2", range: "14-24 km", rate: "Rs 1,600", rateValue: 1600, colour: colours.zone2 };
+      }
+      if (distanceKm <= 34) {
+        return { name: "Zone 3", range: "24-34 km", rate: "Rs 2,000", rateValue: 2000, colour: colours.zone3 };
+      }
+      return { name: "Zone 4", range: "above 34 km", rate: "Rs 2,500", rateValue: 2500, colour: colours.zone4 };
+    }
+
+    function setStatus(html) {
+      document.getElementById("status").innerHTML = html;
+    }
+
+    function clearCurrent() {
+      if (routeLayer) {
+        map.removeLayer(routeLayer);
+        routeLayer = null;
+      }
+      if (destinationMarker) {
+        map.removeLayer(destinationMarker);
+        destinationMarker = null;
+      }
+      document.getElementById("suggestions").innerHTML = "";
+      setStatus("Ready.");
+      map.fitBounds(L.latLngBounds(island), { padding: [40, 40] });
+    }
+
+    async function searchPlace() {
+      const query = document.getElementById("placeInput").value.trim();
+      if (!query) {
+        setStatus("Enter a place name in Mauritius.");
+        return;
+      }
+
+      setStatus("Searching place...");
+      document.getElementById("suggestions").innerHTML = "";
+
+      const url = "https://nominatim.openstreetmap.org/search?" +
+        new URLSearchParams({
+          q: query,
+          format: "json",
+          addressdetails: "1",
+          limit: "5",
+          countrycodes: "mu",
+          bounded: "1",
+          viewbox: "57.25,-19.90,57.85,-20.60"
+        }).toString();
+
+      try {
+        const response = await fetch(url, {
+          headers: { "Accept": "application/json" }
+        });
+        const results = await response.json();
+
+        if (!results || results.length === 0) {
+          setStatus("No matching place found in Mauritius. Try another spelling or a nearby town.");
+          return;
+        }
+
+        renderSuggestions(results);
+        await calculateForPlace(results[0]);
+
+      } catch (error) {
+        setStatus("Place search failed. Check your internet connection and try again.");
+      }
+    }
+
+    function renderSuggestions(results) {
+      const container = document.getElementById("suggestions");
+      if (results.length <= 1) {
+        container.innerHTML = "";
+        return;
+      }
+
+      container.innerHTML = "<strong>Other matches:</strong>";
+      results.slice(1).forEach((result) => {
+        const div = document.createElement("div");
+        div.className = "suggestion";
+        div.textContent = result.display_name;
+        div.onclick = () => calculateForPlace(result);
+        container.appendChild(div);
+      });
+    }
+
+    async function calculateForPlace(place) {
+      const destLat = Number(place.lat);
+      const destLon = Number(place.lon);
+      const placeName = place.display_name;
+
+      setStatus("Calculating driving route...");
+
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${pivot[1]},${pivot[0]};${destLon},${destLat}?overview=full&geometries=geojson`;
+
+      try {
+        const response = await fetch(osrmUrl);
+        const data = await response.json();
+
+        if (!data.routes || data.routes.length === 0) {
+          setStatus("A driving route could not be calculated for this location.");
+          return;
+        }
+
+        const route = data.routes[0];
+        const distanceKm = route.distance / 1000;
+        const durationMin = route.duration / 60;
+        const zone = getZone(distanceKm);
+
+        if (routeLayer) {
+          map.removeLayer(routeLayer);
+        }
+        if (destinationMarker) {
+          map.removeLayer(destinationMarker);
+        }
+
+        const latlngs = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+
+        routeLayer = L.polyline(latlngs, {
+          color: zone.colour,
+          weight: 6,
+          opacity: 0.95
+        }).addTo(map).bindTooltip(`Route: ${distanceKm.toFixed(1)} km`);
+
+        destinationMarker = L.circleMarker([destLat, destLon], {
+          radius: 9,
+          color: "#ffffff",
+          weight: 2,
+          fillColor: zone.colour,
+          fillOpacity: 1
+        }).addTo(map).bindPopup(
+          `<strong>${placeName}</strong><br>
+           Driving distance: <strong>${distanceKm.toFixed(1)} km</strong><br>
+           Estimated time: <strong>${Math.round(durationMin)} min</strong><br>
+           Tariff classification: <strong>${zone.name}</strong> (${zone.range})<br>
+           Zone rate: <strong>${zone.rate}</strong>`
+        ).openPopup();
+
+        const bounds = L.latLngBounds(latlngs);
+        bounds.extend(pivot);
+        bounds.extend([destLat, destLon]);
+        map.invalidateSize();
+        map.fitBounds(bounds, { padding: [70, 70] });
+
+        setStatus(`
+          <div class="result-card">
+            <strong>${placeName}</strong><br>
+            Driving distance from Rey & Lenferna: <strong>${distanceKm.toFixed(1)} km</strong><br>
+            Estimated driving time: <strong>${Math.round(durationMin)} min</strong><br>
+            Tariff zone:
+            <span class="zone-badge" style="background:${zone.colour};">${zone.name}: ${zone.range}</span><br>
+            Zone rate: <strong>${zone.rate}</strong>
+          </div>
+        `);
+
+      } catch (error) {
+        setStatus("Driving distance calculation failed. The routing service may be temporarily unavailable.");
+      }
+    }
+
+    document.getElementById("searchBtn").addEventListener("click", searchPlace);
+    document.getElementById("clearBtn").addEventListener("click", clearCurrent);
+    document.getElementById("placeInput").addEventListener("keydown", function(event) {
+      if (event.key === "Enter") searchPlace();
+    });
+
+    window.addEventListener("resize", () => {
+      map.invalidateSize();
+    });
+  </script>
+</body>
+</html>
